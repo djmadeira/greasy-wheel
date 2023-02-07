@@ -1,22 +1,85 @@
-
 body {
-    background-color: #ddd;
-    margin-top: 20px;
+    background-color: #fff;
+    margin-top: 1.8em;
+    font-family: 'PT Serif', serif;
 }
+
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+
+h1, h2, h3 {
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 1.8em;
+    margin-top: .8em;
+}
+
+h2 {
+    font-size: 1.4em;
+    margin-top: 0.6em;
+}
+
+h3 {
+    font-size: 1.2em;
+    margin-top: 0.4em;
+}
+
 .container {
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
 }
+
 header {
+}
+
+.engagement {
     display: flex;
-    align-items: center;
-    img {
-        width: 60px;
-        margin-right: 30px;
+    padding: 24px;
+
+    h2, h3 {
+        text-align: center;
     }
 }
 
-button {
-    margin-right: 15px;
+.volley {
+    flex-grow: 1;
+    padding: 0 8px;
+
+    &.appendix {
+        flex-grow: 0;
+        flex-basis: 80px;
+    }
+}
+
+.volley--action {
+    button {
+        appearance: none;
+        --webkit-appearance: none;
+        color: #aaa;
+        width: 2ch;
+        border: 1px solid;
+        margin: 2px;
+        padding: 2px;
+    }
+}
+
+.volley--action-group-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.volley--action {
+    flex-basis: 190px;
+}
+
+.volley--placeholder {
+    border: 1px solid;
+    margin: 2px;
+    padding: 2px;
+
+    &.large {
+        font-size: 1.4em;
+    }
 }
