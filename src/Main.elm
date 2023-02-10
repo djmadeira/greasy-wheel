@@ -1,13 +1,14 @@
 port module Main exposing (Model, Msg(..), init, main, setReflexes, toJs, update, view)
 
 import Browser
-import Dict
+import Debug exposing (log)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error(..))
-import Json.Decode as Decode exposing (Decoder, at, decodeString, dict, field, int, keyValuePairs, map2, map5, maybe, nullable, string)
-import List.Extra exposing (groupWhile)
+import Json.Decode as Decode exposing (Decoder, at, decodeString, field, int, keyValuePairs, map2, map5, maybe, string)
+import List exposing (drop, filter, foldl, head, length, repeat, tail, take)
+import List.Extra exposing (getAt, groupWhile, splitAt, takeWhile, unfoldr)
 import OrderedDict
 import SpecialChars exposing (noBreakSpace)
 
@@ -42,18 +43,18 @@ type alias Volley =
 
 
 type VolleyIndex
-    = Volley1
-    | Volley2
-    | Volley3
+    = First
+    | Second
+    | Third
 
 
 type alias ActionQueue =
-    { volley1 : List String, volley2 : List String, volley3 : List String }
+    { first : List String, second : List String, third : List String }
 
 
 initActionQueue : ActionQueue
 initActionQueue =
-    { volley1 = [], volley2 = [], volley3 = [] }
+    { first = [], second = [], third = [] }
 
 
 type alias Model =
@@ -227,7 +228,7 @@ httpErrorToString err =
 -}
 setReflexes : Model -> Int -> Model
 setReflexes model r =
-    { model | reflexes = r, spentActions = 0, actionQueue = { volley1 = [], volley2 = [], volley3 = [] } }
+    { model | reflexes = r, spentActions = 0, actionQueue = { first = [], second = [], third = [] } }
 
 
 unqueueAction : Model -> String -> VolleyIndex -> Int -> Model
@@ -235,14 +236,14 @@ unqueueAction model action index cost =
     let
         newQueue actionQueue =
             case index of
-                Volley1 ->
-                    { actionQueue | volley1 = List.filter (\a -> a /= action) model.actionQueue.volley1 }
+                First ->
+                    { actionQueue | first = filter (\a -> a /= action) model.actionQueue.first }
 
-                Volley2 ->
-                    { actionQueue | volley2 = List.filter (\a -> a /= action) model.actionQueue.volley2 }
+                Second ->
+                    { actionQueue | second = filter (\a -> a /= action) model.actionQueue.second }
 
-                Volley3 ->
-                    { actionQueue | volley3 = List.filter (\a -> a /= action) model.actionQueue.volley3 }
+                Third ->
+                    { actionQueue | third = filter (\a -> a /= action) model.actionQueue.third }
     in
     { model | spentActions = model.spentActions - cost, actionQueue = newQueue model.actionQueue }
 
@@ -252,14 +253,14 @@ queueAction model action index cost =
     let
         newQueue actionQueue =
             case index of
-                Volley1 ->
-                    { actionQueue | volley1 = model.actionQueue.volley1 ++ [ action ] }
+                First ->
+                    { actionQueue | first = model.actionQueue.first ++ [ action ] }
 
-                Volley2 ->
-                    { actionQueue | volley2 = model.actionQueue.volley2 ++ [ action ] }
+                Second ->
+                    { actionQueue | second = model.actionQueue.second ++ [ action ] }
 
-                Volley3 ->
-                    { actionQueue | volley3 = model.actionQueue.volley3 ++ [ action ] }
+                Third ->
+                    { actionQueue | third = model.actionQueue.third ++ [ action ] }
     in
     { model | spentActions = model.spentActions + cost, actionQueue = newQueue model.actionQueue }
 
@@ -284,7 +285,7 @@ view model =
         [ header [] []
         , main_ []
             [ div [ class "inputs" ]
-                [ label [ class "inputs--reflexes" ] [ span [] [ text "Reflexes" ], input [ onInput SetReflexes ] [] ]
+                [ label [ class "inputs--reflexes" ] [ span [] [ text "Reflexes B" ], input [ onInput SetReflexes ] [] ]
                 ]
             , div [ class "outputs" ]
                 [ div [ class "available-actions" ]
@@ -293,9 +294,11 @@ view model =
                     ]
                 , div [ class "action-queue" ]
                     [ h2 [] [ text "Selected Actions", button [ class "action-queue--clear", onClick ClearQueue ] [ text "Clear" ] ]
-                    , viewActionQueue "1" model.actionQueue.volley1
-                    , viewActionQueue "2" model.actionQueue.volley2
-                    , viewActionQueue "3" model.actionQueue.volley3
+                    , div [ class "action-queue--wrap" ]
+                        [ viewActionQueue "1" model.actionQueue.first
+                        , viewActionQueue "2" model.actionQueue.second
+                        , viewActionQueue "3" model.actionQueue.third
+                        ]
                     ]
                 ]
             , div [ class "exchange" ]
@@ -310,7 +313,7 @@ view model =
                 --         , div [ class "volley--placeholder large" ] [ text "+5 Ob" ]
                 --         ]
                 --     ]
-                (List.map (\index -> viewVolley model index) [ Volley1, Volley2, Volley3 ])
+                (List.map (\index -> viewVolley model index) [ First, Second, Third ])
 
             -- )
             ]
@@ -322,37 +325,91 @@ tooltip anchor content =
     span [ class "tooltip--anchor" ] [ text anchor, div [ class "tooltip--content" ] [ text content ] ]
 
 
-viewAction : Model -> VolleyIndex -> Action -> Html Msg
-viewAction model index { name, id, actionType, cost, caution } =
+notEmpty : List (List String) -> Maybe ( List String, List (List String) )
+notEmpty actions =
     let
+        h =
+            List.concat <| List.map (take 1) actions
+
+        t =
+            List.map (drop 1) actions
+    in
+    if length h < 1 then
+        Nothing
+
+    else
+        Just ( h, t )
+
+
+actionsToRounds : List (List String) -> List (List String)
+actionsToRounds actions =
+    let
+        rounds =
+            unfoldr notEmpty actions
+
+        roundsSize =
+            length rounds
+
+        lastRoundSize =
+            case tail rounds of
+                Just x ->
+                    length x
+
+                Nothing ->
+                    0
+    in
+    if roundsSize == 0 || lastRoundSize == 3 then
+        rounds ++ [ [] ]
+
+    else
+        rounds
+
+
+queueFromIndex : Model -> VolleyIndex -> List String
+queueFromIndex model index =
+    case index of
+        First ->
+            model.actionQueue.first
+
+        Second ->
+            model.actionQueue.second
+
+        Third ->
+            model.actionQueue.third
+
+
+actionButton : Model -> VolleyIndex -> Action -> List String -> Html Msg
+actionButton model index action round =
+    let
+        queue =
+            queueFromIndex model index
+
         actionChecked =
-            List.member id
-                (case index of
-                    Volley1 ->
-                        model.actionQueue.volley1
+            List.member action.id round && List.member action.id queue
 
-                    Volley2 ->
-                        model.actionQueue.volley2
+        buttonDisabled =
+            if actionChecked then
+                False
 
-                    Volley3 ->
-                        model.actionQueue.volley3
-                )
+            else if not <| List.isEmpty queue then
+                True
+
+            else
+                False
 
         className =
-            "volley--action"
-                ++ (if actionChecked then
-                        " selected"
+            if actionChecked then
+                "selected"
 
-                    else
-                        ""
-                   )
+            else
+                ""
 
         buttonLabel =
             if actionChecked then
                 "X"
 
             else
-                case cost of
+                case action.cost of
                     Just x ->
                         if x == 1 then
                             String.fromChar noBreakSpace
@@ -361,7 +418,7 @@ viewAction model index { name, id, actionType, cost, caution } =
                             String.fromInt x
 
                     Nothing ->
-                        case actionType of
+                        case action.actionType of
                             "Variable" ->
                                 "x"
 
@@ -375,32 +432,50 @@ viewAction model index { name, id, actionType, cost, caution } =
             else
                 QueueAction
 
+        buttonAttrs =
+            if buttonDisabled then
+                [ disabled True ]
+
+            else
+                [ onClick
+                    (clickHandler action.id
+                        index
+                        (case action.cost of
+                            Just x ->
+                                x
+
+                            Nothing ->
+                                0
+                        )
+                    )
+                ]
+    in
+    button (class className :: buttonAttrs) [ text buttonLabel ]
+
+
+viewAction : Model -> VolleyIndex -> Action -> Html Msg
+viewAction model index action =
+    let
+        rounds =
+            actionsToRounds [ model.actionQueue.first, model.actionQueue.second, model.actionQueue.third ]
+
+        test =
+            Debug.log "test" <| Debug.toString rounds
+
         cautionTooltip =
-            case caution of
+            case action.caution of
                 Nothing ->
                     span [] []
 
                 Just v ->
                     span [] [ tooltip "*" v ]
     in
-    div [ class className ]
-        [ button
-            [ onClick
-                (clickHandler id
-                    index
-                    (case cost of
-                        Just x ->
-                            x
-
-                        Nothing ->
-                            0
-                    )
-                )
-            ]
-            [ text <| buttonLabel ]
-        , span [] [ text name ]
-        , cautionTooltip
-        ]
+    div [ class "volley--action" ]
+        (List.map (actionButton model index action) rounds
+            ++ [ span [] [ text action.name ]
+               , cautionTooltip
+               ]
+        )
 
 
 viewVolley : Model -> VolleyIndex -> Html Msg
@@ -414,18 +489,18 @@ viewVolley model index =
 
         n =
             case index of
-                Volley1 ->
+                First ->
                     "1"
 
-                Volley2 ->
+                Second ->
                     "2"
 
-                Volley3 ->
+                Third ->
                     "3"
     in
     div [ class "volley" ]
-        (List.append [ h2 [] [ text <| "Volley " ++ n ] ]
-            (List.map viewActionGroup (groupWhile (\a b -> a.group == b.group) (OrderedDict.values model.fight.actions)))
+        (h2 [] [ text <| "Volley " ++ n ]
+            :: List.map viewActionGroup (groupWhile (\a b -> a.group == b.group) (OrderedDict.values model.fight.actions))
         )
 
 

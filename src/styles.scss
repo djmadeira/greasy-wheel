@@ -96,6 +96,14 @@ header {
     }
 }
 
+.action-queue--wrap {
+    display: flex;
+}
+
+.action-queue--volley {
+    width: 180px;
+}
+
 .action-queue--clear {
     font-size: 0.6em;
     margin-left: 0.4rem;
@@ -112,7 +120,9 @@ header {
 
 .volley {
     flex-grow: 1;
-    padding: 0 8px;
+    margin: 0 0.2em;
+    padding: 0 0.4em;
+    background: #F7F7F7;
 
     &.appendix {
         flex-grow: 0;
@@ -130,11 +140,13 @@ header {
     button {
         color: $clr-light;
         width: 2ch;
-    }
 
-    &.selected {
-        button {
+        &.selected {
             color: $clr-interact;
+        }
+
+        &[disabled] {
+            border-color: $clr-light;
         }
     }
 }
