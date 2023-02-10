@@ -1,11 +1,14 @@
-port module Main exposing (Model, Msg(..), add1, init, main, toJs, update, view)
+port module Main exposing (Model, Msg(..), init, main, setReflexes, toJs, update, view)
 
 import Browser
+import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Http exposing (Error(..))
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder, at, decodeString, dict, field, int, map2, map5, nullable, string)
+import List.Extra exposing (groupWhile)
+import SpecialChars exposing (noBreakSpace)
 
 
 
@@ -24,120 +27,119 @@ port toJs : String -> Cmd msg
 
 
 type alias Action =
-    { name : String
+    { group : String
+    , actionType : String
+    , name : String
     , cost : Int
-    , addlReq : String
-    }
-
-
-type alias ActionGroup =
-    { name : String
-    , actions : List Action
+    , caution : Maybe String
     }
 
 
 type alias Volley =
-    { actionsPerVolley : Int
-    , actionGroups : List ActionGroup
-    }
+    { actionsPerVolley : Int, actions : Dict.Dict String Action }
+
+
+type VolleyIndex
+    = Volley1
+    | Volley2
+    | Volley3
+
+
+type alias ActionQueue =
+    { volley1 : List String, volley2 : List String, volley3 : List String }
+
+
+initActionQueue : ActionQueue
+initActionQueue =
+    { volley1 = [], volley2 = [], volley3 = [] }
 
 
 type alias Model =
-    { counter : Int
+    { reflexes : Int
+    , spentActions : Int
+    , actionQueue : ActionQueue
     , serverMessage : String
     , fight : Volley
     }
 
 
-init : Int -> ( Model, Cmd Msg )
+type alias ActionDat =
+    { group : String
+    , actionType : String
+    , name : String
+    , cost : Int
+    , caution : Maybe String
+    }
+
+
+actionDatToAction : String -> ActionDat -> Action
+actionDatToAction id data =
+    { group = data.group
+    , actionType = data.actionType
+    , name = id
+    , cost = data.cost
+    , caution = data.caution
+    }
+
+
+actionDatDecoder : Decoder ActionDat
+actionDatDecoder =
+    map5 ActionDat
+        (field "group" string)
+        (field "type" string)
+        (field "name" string)
+        (field "cost" int)
+        (field "caution" <| nullable string)
+
+
+volleyDecoder : Decoder Volley
+volleyDecoder =
+    at [ "fight" ]
+        (map2 Volley
+            (field "actionsPerVolley" int)
+            (field "actions" (Decode.map (Dict.map actionDatToAction) (dict actionDatDecoder)))
+        )
+
+
+loadActions : String -> Volley
+loadActions json =
+    let
+        res =
+            decodeString volleyDecoder json
+    in
+    case res of
+        Err _ ->
+            { actionsPerVolley = 0, actions = Dict.empty }
+
+        Ok a ->
+            a
+
+
+init : String -> ( Model, Cmd Msg )
 init flags =
-    ( { counter = flags
+    ( { reflexes = 0
+      , spentActions = 0
+      , actionQueue = initActionQueue
       , serverMessage = ""
-      , fight =
-            { actionsPerVolley = 3
-            , actionGroups =
-                [ { name = "Attack"
-                  , actions =
-                        [ { name = "Strike", cost = 1, addlReq = "" }
-                        , { name = "Great Strike", cost = 2, addlReq = "" }
-                        , { name = "Block & Strike", cost = 1, addlReq = "Requires Shield Training" }
-                        , { name = "Lock & Strike", cost = 1, addlReq = "Requires a special trait like Wolf Snout" }
-                        ]
-                  }
-                , { name = "Defense"
-                  , actions =
-                        [ { name = "Avoid", cost = 1, addlReq = "" }
-                        , { name = "Block", cost = 1, addlReq = "" }
-                        , { name = "Counterstrike", cost = 1, addlReq = "" }
-                        ]
-                  }
-                , { name = "Basic Fighting"
-                  , actions =
-                        [ { name = "Assess", cost = 1, addlReq = "" }
-                        , { name = "Change Stance", cost = 1, addlReq = "" }
-                        , { name = "Charge/Tackle", cost = 1, addlReq = "" }
-                        , { name = "Draw Weapon", cost = 2, addlReq = "" }
-                        , { name = "Get Up", cost = 2, addlReq = "" }
-                        , { name = "Lock", cost = 1, addlReq = "" }
-                        , { name = "Push", cost = 1, addlReq = "" }
-                        , { name = "Physical Action", cost = 2, addlReq = "" }
-                        ]
-                  }
-                , { name = "Special Fighting"
-                  , actions =
-                        [ { name = "Beat", cost = 1, addlReq = "" }
-                        , { name = "Disarm", cost = 1, addlReq = "" }
-                        , { name = "Feint", cost = 1, addlReq = "" }
-                        , { name = "Throw Person", cost = 1, addlReq = "" }
-                        ]
-                  }
-                , { name = "Shooting and Throwing"
-                  , actions =
-                        [ { name = "Aim", cost = 1, addlReq = "" }
-                        , { name = "Fire Gun/Crossbow", cost = 2, addlReq = "" }
-                        , { name = "Nock and Draw", cost = 5, addlReq = "" }
-                        , { name = "Release Bow", cost = 1, addlReq = "" }
-                        , { name = "Snapshot", cost = 1, addlReq = "" }
-                        , { name = "Throw Weapon", cost = 2, addlReq = "" }
-                        ]
-                  }
-                , { name = "Magic"
-                  , actions =
-                        [ { name = "Cast Spell", cost = -1, addlReq = "Cost is determined by spell" }
-                        , { name = "Drop Spell", cost = 1, addlReq = "" }
-                        , { name = "Command Spirit", cost = 1, addlReq = "" }
-                        , { name = "Sing, Howl, Pray", cost = -1, addlReq = "Does not cost actions. Listed on the action sheet for timing purposes only." }
-                        ]
-                  }
-                , { name = "Social"
-                  , actions =
-                        [ { name = "Command", cost = 2, addlReq = "" }
-                        , { name = "Intimidate", cost = 2, addlReq = "" }
-                        ]
-                  }
-                , { name = "Hesitation"
-                  , actions =
-                        [ { name = "Fall Prone", cost = 1, addlReq = "" }
-                        , { name = "Run Screaming", cost = 1, addlReq = "" }
-                        , { name = "Stand and Drool", cost = 1, addlReq = "" }
-                        , { name = "Swoon", cost = 1, addlReq = "" }
-                        ]
-                  }
-                ]
-            }
+      , fight = loadActions flags
       }
     , Cmd.none
     )
 
 
 
+-- }
+-- ]
+--       }
 -- ---------------------------
 -- UPDATE
 -- ---------------------------
 
 
 type Msg
-    = Inc
+    = SetReflexes String
+    | QueueAction String VolleyIndex Int
+    | ClearQueue
     | TestServer
     | OnServerResponse (Result Http.Error String)
 
@@ -145,8 +147,23 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
-        Inc ->
-            ( add1 model, toJs "Inc" )
+        QueueAction action volley cost ->
+            ( queueAction model action volley cost, toJs "QueueAction" )
+
+        ClearQueue ->
+            ( { model | actionQueue = initActionQueue }, toJs "ClearQueue" )
+
+        SetReflexes input ->
+            let
+                r =
+                    String.toInt input
+            in
+            case r of
+                Nothing ->
+                    ( setReflexes model 0, toJs "SetReflexes" )
+
+                Just n ->
+                    ( setReflexes model n, toJs "SetReflexes" )
 
         TestServer ->
             let
@@ -190,9 +207,26 @@ httpErrorToString err =
     add1 5 --> 6
 
 -}
-add1 : Model -> Model
-add1 model =
-    { model | counter = model.counter + 1 }
+setReflexes : Model -> Int -> Model
+setReflexes model r =
+    { model | reflexes = r, spentActions = 0, actionQueue = { volley1 = [], volley2 = [], volley3 = [] } }
+
+
+queueAction : Model -> String -> VolleyIndex -> Int -> Model
+queueAction model action index cost =
+    let
+        newQueue actionQueue =
+            case index of
+                Volley1 ->
+                    { actionQueue | volley1 = model.actionQueue.volley1 ++ [ action ] }
+
+                Volley2 ->
+                    { actionQueue | volley2 = model.actionQueue.volley2 ++ [ action ] }
+
+                Volley3 ->
+                    { actionQueue | volley3 = model.actionQueue.volley3 ++ [ action ] }
+    in
+    { model | spentActions = model.spentActions - cost, actionQueue = newQueue model.actionQueue }
 
 
 
@@ -201,12 +235,29 @@ add1 model =
 -- ---------------------------
 
 
+viewActionQueue : String -> List String -> Html Msg
+viewActionQueue label actions =
+    div [ class "action-queue--volley" ] <|
+        List.map (\action -> span [] [ text action ]) actions
+
+
 view : Model -> Html Msg
 view model =
     div [ class "" ]
         [ header [] []
         , main_ []
-            [ div [ class "engagement" ]
+            [ div [ class "inputs" ]
+                [ label [ class "inputs--reflexes" ] [ span [] [ text "Reflexes" ], input [ onInput SetReflexes ] [] ]
+                ]
+            , div [ class "outputs" ]
+                [ div [ class "action-queue" ]
+                    [ h2 [] [ text "Selected Actions", button [ class "action-queue--clear", onClick ClearQueue ] [ text "Clear" ] ]
+                    , viewActionQueue "1" model.actionQueue.volley1
+                    , viewActionQueue "2" model.actionQueue.volley2
+                    , viewActionQueue "3" model.actionQueue.volley3
+                    ]
+                ]
+            , div [ class "exchange" ]
                 -- (List.append
                 --     [ div [ class "volley appendix" ]
                 --         [ h2 [ class "volley--appendix-header" ] [ text "Disadvantage to all actions except Defense actions" ]
@@ -218,97 +269,84 @@ view model =
                 --         , div [ class "volley--placeholder large" ] [ text "+5 Ob" ]
                 --         ]
                 --     ]
-                (viewEngagement model.fight)
+                (List.map (\index -> viewVolley model index) [ Volley1, Volley2, Volley3 ])
 
             -- )
             ]
         ]
 
 
-viewEngagement : Volley -> List (Html Msg)
-viewEngagement volley =
-    List.map (viewVolley volley) [ 1, 2, 3 ]
+tooltip : String -> String -> Html Msg
+tooltip anchor content =
+    span [ class "tooltip--anchor" ] [ text anchor, div [ class "tooltip--content" ] [ text content ] ]
 
 
-actionButton : Action -> Html Msg
-actionButton action =
+viewVolley : Model -> VolleyIndex -> Html Msg
+viewVolley model index =
     let
-        actionPlaceholder =
-            if action.addlReq == "" then
-                if action.cost == 0 then
-                    "x"
-
-                else if action.cost == -1 then
-                    "§"
-
-                else
-                    String.fromInt action.cost
-
-            else
-                "*"
-
-        attributes =
-            if action.addlReq == "" then
-                []
-
-            else
-                [ title action.addlReq ]
-    in
-    button attributes [ text actionPlaceholder ]
-
-
-viewVolley : Volley -> Int -> Html Msg
-viewVolley volley n =
-    let
-        viewActionGroup actionGroup =
+        viewActionGroup ( { group }, actions ) =
             div [ class "volley--action-group" ]
-                [ h3 [ class "volley--action-group-header" ] [ text (actionGroup.name ++ " Actions") ]
-                , div [ class "volley--action-group-actions" ] (List.map viewAction actionGroup.actions)
+                [ h3 [ class "volley--action-group-header" ] [ text (group ++ " Actions") ]
+                , div [ class "volley--action-group-actions" ] (List.map viewAction actions)
                 ]
 
-        viewAction action =
-            div [ class "volley--action" ] (List.append (List.repeat volley.actionsPerVolley (actionButton action)) [ span [] [ text action.name ] ])
+        buttonLabel cost =
+            if cost == 1 then
+                String.fromChar noBreakSpace
+
+            else
+                String.fromInt cost
+
+        clickHandler action cost =
+            onClick <| QueueAction action index cost
+
+        cautionTooltip name caution =
+            case caution of
+                Nothing ->
+                    span [] []
+
+                Just v ->
+                    span []
+                        [ text name
+                        , span [] [ tooltip "*" v ]
+                        ]
+
+        viewAction { actionType, name, cost, caution } =
+            div [ class "volley--action" ]
+                (case actionType of
+                    "Variable" ->
+                        [ input [ placeholder "x" ] [], span [] [ text name ] ]
+
+                    _ ->
+                        [ button [ clickHandler name cost ] [ text <| buttonLabel cost ]
+                        , cautionTooltip name caution
+                        ]
+                )
+
+        n =
+            case index of
+                Volley1 ->
+                    "1"
+
+                Volley2 ->
+                    "2"
+
+                Volley3 ->
+                    "3"
     in
     div [ class "volley" ]
-        (List.append [ h2 [] [ text <| "Volley " ++ String.fromInt n ] ] (List.map viewActionGroup volley.actionGroups))
+        (List.append [ h2 [] [ text <| "Volley " ++ n ] ]
+            (List.map viewActionGroup (groupWhile (\a b -> a.group == b.group) (Dict.values model.fight.actions)))
+        )
 
 
 
--- div [ class "container p-2" ]
---     [ header [ class "grid-cols-3" ]
---         [ span [] [ img [ src "/images/logo.png" ] [] ]
---         , div [] [ span [ class "icon" ] [] ]
---         , h1 [ class "text-2xl font-bold ml-2" ] [ text "Elm 0.19.1 Webpack Starter, with hot-reloading" ]
---         ]
---     , p [] [ text "Click on the button below to increment the state." ]
---     , div [ class "flex flex-row justify-between" ]
---         [ div [ class "flex flex-row items-center" ]
---             [ button
---                 [ class "border border-green-500 bg-green-500 text-white rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-green-600 focus:outline-none focus:shadow-outline"
---                 , onClick Inc
---                 ]
---                 [ text "+ 1" ]
---             , text <| String.fromInt model.counter
---             ]
---         , div [ class "flex flex-row items-center" ]
---             [ text model.serverMessage
---             , button
---                 [ class "border border-green-500 bg-green-500 text-white rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-green-600 focus:outline-none focus:shadow-outline"
---                 , onClick TestServer
---                 ]
---                 [ text "ping dev server" ]
---             ]
---         ]
---     , p [] [ text "Then make a change to the source code and see how the state is retained after recompilation." ]
---     ]
---     [
---         ]
 -- ---------------------------
 -- MAIN
 -- ---------------------------
 
 
-main : Program Int Model Msg
+main : Program String Model Msg
 main =
     Browser.document
         { init = init

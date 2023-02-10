@@ -2,9 +2,10 @@
 
 import "./tailwind.css";
 require("./styles.scss");
+const actions = require('./actions.yml');
 
 const {Elm} = require('./Main');
-var app = Elm.Main.init({flags: 6});
+var app = Elm.Main.init({flags: JSON.stringify(actions)});
 
 app.ports.toJs.subscribe(data => {
     console.log(data);

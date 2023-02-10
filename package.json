@@ -54,5 +54,8 @@
     },
     "prettier": {
         "tabWidth": 4
+    },
+    "dependencies": {
+        "yaml-loader": "^0.8.0"
     }
 }

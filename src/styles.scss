@@ -1,6 +1,10 @@
+$clr-text: #141414;
+$clr-interact: #7D1B00;
+$clr-light: #aaa;
+
 body {
     background-color: #fff;
-    margin-top: 1.8em;
+    color: $clr-text;
     font-family: 'PT Serif', serif;
 }
 
@@ -14,17 +18,53 @@ h1, h2, h3 {
 
 h1 {
     font-size: 1.8em;
-    margin-top: .8em;
+    margin-top: .8rem;
 }
 
 h2 {
     font-size: 1.4em;
-    margin-top: 0.6em;
+    margin-top: 0.6rem;
 }
 
 h3 {
     font-size: 1.2em;
-    margin-top: 0.4em;
+    margin-top: 0.4rem;
+}
+
+input {
+    border: 1px solid;
+    margin: 2px;
+    padding: 2px;
+}
+
+button {
+    appearance: none;
+    --webkit-appearance: none;
+    border: 1px solid #000;
+    margin: 2px;
+    padding: 2px;
+}
+
+.tooltip--anchor {
+    position: relative;
+    color: $clr-interact;
+    cursor: pointer;
+
+    &:hover .tooltip--content {
+        display: block;
+    }
+}
+
+.tooltip--content {
+    color: $clr-text;
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    transform: translateX(-50%);
+    background: $clr-light;
+    min-width: 180px;
+    padding: 0 0.4em;
 }
 
 .container {
@@ -33,9 +73,37 @@ h3 {
 header {
 }
 
-.engagement {
+.inputs {
+    padding: 1rem;
+    font-size: 1.4em;
+
+    label {
+        font-weight: 700;
+    }
+
+    input {
+        margin-left: 0.2em;
+    }
+}
+
+.outputs {
+    padding: 1rem;
+}
+
+.inputs--reflexes {
+    input {
+        width: 2ch;
+    }
+}
+
+.action-queue--clear {
+    font-size: 0.6em;
+    margin-left: 0.4rem;
+}
+
+.exchange {
     display: flex;
-    padding: 24px;
+    padding: 1rem;
 
     h2, h3 {
         text-align: center;
@@ -53,14 +121,15 @@ header {
 }
 
 .volley--action {
-    button {
-        appearance: none;
-        --webkit-appearance: none;
-        color: #aaa;
+    button, input {
         width: 2ch;
-        border: 1px solid;
-        margin: 2px;
-        padding: 2px;
+        height: 1.5rem;
+        line-height: 0.9;
+    }
+
+    button {
+        color: $clr-light;
+        width: 2ch;
     }
 }
 
@@ -76,8 +145,6 @@ header {
 
 .volley--placeholder {
     border: 1px solid;
-    margin: 2px;
-    padding: 2px;
 
     &.large {
         font-size: 1.4em;
