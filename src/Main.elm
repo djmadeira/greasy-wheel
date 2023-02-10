@@ -153,6 +153,7 @@ init flags =
 type Msg
     = SetReflexes String
     | QueueAction String VolleyIndex Int
+    | UnqueueAction String VolleyIndex Int
     | ClearQueue
     | TestServer
     | OnServerResponse (Result Http.Error String)
@@ -163,6 +164,9 @@ update message model =
     case message of
         QueueAction action volley cost ->
             ( queueAction model action volley cost, toJs "QueueAction" )
+
+        UnqueueAction action volley cost ->
+            ( unqueueAction model action volley cost, toJs "QueueAction" )
 
         ClearQueue ->
             ( { model | actionQueue = initActionQueue, spentActions = 0 }, toJs "ClearQueue" )
@@ -226,6 +230,23 @@ setReflexes model r =
     { model | reflexes = r, spentActions = 0, actionQueue = { volley1 = [], volley2 = [], volley3 = [] } }
 
 
+unqueueAction : Model -> String -> VolleyIndex -> Int -> Model
+unqueueAction model action index cost =
+    let
+        newQueue actionQueue =
+            case index of
+                Volley1 ->
+                    { actionQueue | volley1 = List.filter (\a -> a /= action) model.actionQueue.volley1 }
+
+                Volley2 ->
+                    { actionQueue | volley2 = List.filter (\a -> a /= action) model.actionQueue.volley2 }
+
+                Volley3 ->
+                    { actionQueue | volley3 = List.filter (\a -> a /= action) model.actionQueue.volley3 }
+    in
+    { model | spentActions = model.spentActions - cost, actionQueue = newQueue model.actionQueue }
+
+
 queueAction : Model -> String -> VolleyIndex -> Int -> Model
 queueAction model action index cost =
     let
@@ -251,9 +272,10 @@ queueAction model action index cost =
 
 viewActionQueue : String -> List String -> Html Msg
 viewActionQueue label actions =
-    div [ class "action-queue--volley" ] <|
-        h3 [] [ text <| "Volley " ++ label ]
-            :: List.map (\action -> span [] [ text action ]) actions
+    div [ class "action-queue--volley" ]
+        [ h3 [] [ text <| "Volley " ++ label ]
+        , span [] [ text <| String.join ", " actions ]
+        ]
 
 
 view : Model -> Html Msg
@@ -301,7 +323,7 @@ tooltip anchor content =
 
 
 viewAction : Model -> VolleyIndex -> Action -> Html Msg
-viewAction model index { name, id, cost, caution } =
+viewAction model index { name, id, actionType, cost, caution } =
     let
         actionChecked =
             List.member id
@@ -339,19 +361,19 @@ viewAction model index { name, id, cost, caution } =
                             String.fromInt x
 
                     Nothing ->
-                        "x"
+                        case actionType of
+                            "Variable" ->
+                                "x"
+
+                            _ ->
+                                String.fromChar noBreakSpace
 
         clickHandler =
-            onClick <|
-                QueueAction id
-                    index
-                    (case cost of
-                        Just x ->
-                            x
+            if actionChecked then
+                UnqueueAction
 
-                        Nothing ->
-                            0
-                    )
+            else
+                QueueAction
 
         cautionTooltip =
             case caution of
@@ -362,7 +384,20 @@ viewAction model index { name, id, cost, caution } =
                     span [] [ tooltip "*" v ]
     in
     div [ class className ]
-        [ button [ clickHandler ] [ text <| buttonLabel ]
+        [ button
+            [ onClick
+                (clickHandler id
+                    index
+                    (case cost of
+                        Just x ->
+                            x
+
+                        Nothing ->
+                            0
+                    )
+                )
+            ]
+            [ text <| buttonLabel ]
         , span [] [ text name ]
         , cautionTooltip
         ]
@@ -371,10 +406,10 @@ viewAction model index { name, id, cost, caution } =
 viewVolley : Model -> VolleyIndex -> Html Msg
 viewVolley model index =
     let
-        viewActionGroup ( { group }, actions ) =
+        viewActionGroup ( firstMember, otherMembers ) =
             div [ class "volley--action-group" ]
-                [ h3 [ class "volley--action-group-header" ] [ text (group ++ " Actions") ]
-                , div [ class "volley--action-group-actions" ] (List.map (viewAction model index) actions)
+                [ h3 [ class "volley--action-group-header" ] [ text (firstMember.group ++ " Actions") ]
+                , div [ class "volley--action-group-actions" ] (List.map (viewAction model index) (firstMember :: otherMembers))
                 ]
 
         n =
