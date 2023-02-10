@@ -131,6 +131,16 @@ header {
         color: $clr-light;
         width: 2ch;
     }
+
+    &.selected {
+        button {
+            color: $clr-interact;
+        }
+    }
+}
+
+.volley--action-group {
+    margin-bottom: 2rem;
 }
 
 .volley--action-group-actions {
@@ -140,7 +150,7 @@ header {
 }
 
 .volley--action {
-    flex-basis: 190px;
+    width: 180px;
 }
 
 .volley--placeholder {

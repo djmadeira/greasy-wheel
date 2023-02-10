@@ -30,6 +30,7 @@ port toJs : String -> Cmd msg
 type alias Action =
     { group : String
     , actionType : String
+    , id : String
     , name : String
     , cost : Maybe Int
     , caution : Maybe String
@@ -65,9 +66,29 @@ type alias Model =
     }
 
 
-actionDecoder : Decoder Action
-actionDecoder =
-    map5 Action
+type alias ActionDat =
+    { group : String
+    , actionType : String
+    , name : String
+    , cost : Maybe Int
+    , caution : Maybe String
+    }
+
+
+actionDatToAction : String -> ActionDat -> Action
+actionDatToAction id data =
+    { group = data.group
+    , actionType = data.actionType
+    , id = id
+    , name = data.name
+    , cost = data.cost
+    , caution = data.caution
+    }
+
+
+actionDatDecoder : Decoder ActionDat
+actionDatDecoder =
+    map5 ActionDat
         (field "group" string)
         (field "type" string)
         (field "name" string)
@@ -85,7 +106,7 @@ volleyDecoder =
     at [ "fight" ]
         (map2 Volley
             (field "actionsPerVolley" int)
-            (field "actions" <| orderedDict actionDecoder)
+            (field "actions" (Decode.map (OrderedDict.map actionDatToAction) (orderedDict actionDatDecoder)))
         )
 
 
@@ -144,7 +165,7 @@ update message model =
             ( queueAction model action volley cost, toJs "QueueAction" )
 
         ClearQueue ->
-            ( { model | actionQueue = initActionQueue }, toJs "ClearQueue" )
+            ( { model | actionQueue = initActionQueue, spentActions = 0 }, toJs "ClearQueue" )
 
         SetReflexes input ->
             let
@@ -219,7 +240,7 @@ queueAction model action index cost =
                 Volley3 ->
                     { actionQueue | volley3 = model.actionQueue.volley3 ++ [ action ] }
     in
-    { model | spentActions = model.spentActions - cost, actionQueue = newQueue model.actionQueue }
+    { model | spentActions = model.spentActions + cost, actionQueue = newQueue model.actionQueue }
 
 
 
@@ -244,7 +265,11 @@ view model =
                 [ label [ class "inputs--reflexes" ] [ span [] [ text "Reflexes" ], input [ onInput SetReflexes ] [] ]
                 ]
             , div [ class "outputs" ]
-                [ div [ class "action-queue" ]
+                [ div [ class "available-actions" ]
+                    [ h2 [] [ text "Spent Actions" ]
+                    , span [] [ text <| String.fromInt model.spentActions ]
+                    ]
+                , div [ class "action-queue" ]
                     [ h2 [] [ text "Selected Actions", button [ class "action-queue--clear", onClick ClearQueue ] [ text "Clear" ] ]
                     , viewActionQueue "1" model.actionQueue.volley1
                     , viewActionQueue "2" model.actionQueue.volley2
@@ -275,45 +300,82 @@ tooltip anchor content =
     span [ class "tooltip--anchor" ] [ text anchor, div [ class "tooltip--content" ] [ text content ] ]
 
 
-viewVolley : Model -> VolleyIndex -> Html Msg
-viewVolley model index =
+viewAction : Model -> VolleyIndex -> Action -> Html Msg
+viewAction model index { name, id, cost, caution } =
     let
-        viewActionGroup ( { group }, actions ) =
-            div [ class "volley--action-group" ]
-                [ h3 [ class "volley--action-group-header" ] [ text (group ++ " Actions") ]
-                , div [ class "volley--action-group-actions" ] (List.map viewAction actions)
-                ]
+        actionChecked =
+            List.member id
+                (case index of
+                    Volley1 ->
+                        model.actionQueue.volley1
 
-        buttonLabel cost =
-            if cost == 1 then
-                String.fromChar noBreakSpace
+                    Volley2 ->
+                        model.actionQueue.volley2
+
+                    Volley3 ->
+                        model.actionQueue.volley3
+                )
+
+        className =
+            "volley--action"
+                ++ (if actionChecked then
+                        " selected"
+
+                    else
+                        ""
+                   )
+
+        buttonLabel =
+            if actionChecked then
+                "X"
 
             else
-                String.fromInt cost
+                case cost of
+                    Just x ->
+                        if x == 1 then
+                            String.fromChar noBreakSpace
 
-        clickHandler action cost =
-            onClick <| QueueAction action index cost
+                        else
+                            String.fromInt x
 
-        cautionTooltip caution =
+                    Nothing ->
+                        "x"
+
+        clickHandler =
+            onClick <|
+                QueueAction id
+                    index
+                    (case cost of
+                        Just x ->
+                            x
+
+                        Nothing ->
+                            0
+                    )
+
+        cautionTooltip =
             case caution of
                 Nothing ->
                     span [] []
 
                 Just v ->
                     span [] [ tooltip "*" v ]
+    in
+    div [ class className ]
+        [ button [ clickHandler ] [ text <| buttonLabel ]
+        , span [] [ text name ]
+        , cautionTooltip
+        ]
 
-        viewAction { name, cost, caution } =
-            div [ class "volley--action" ]
-                (case cost of
-                    Nothing ->
-                        [ input [ placeholder "x" ] [], span [] [ text name ] ]
 
-                    Just x ->
-                        [ button [ clickHandler name x ] [ text <| buttonLabel x ]
-                        , span [] [ text name ]
-                        , cautionTooltip caution
-                        ]
-                )
+viewVolley : Model -> VolleyIndex -> Html Msg
+viewVolley model index =
+    let
+        viewActionGroup ( { group }, actions ) =
+            div [ class "volley--action-group" ]
+                [ h3 [ class "volley--action-group-header" ] [ text (group ++ " Actions") ]
+                , div [ class "volley--action-group-actions" ] (List.map (viewAction model index) actions)
+                ]
 
         n =
             case index of
