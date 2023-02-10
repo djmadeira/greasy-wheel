@@ -294,16 +294,13 @@ viewVolley model index =
         clickHandler action cost =
             onClick <| QueueAction action index cost
 
-        cautionTooltip name caution =
+        cautionTooltip caution =
             case caution of
                 Nothing ->
                     span [] []
 
                 Just v ->
-                    span []
-                        [ text name
-                        , span [] [ tooltip "*" v ]
-                        ]
+                    span [] [ tooltip "*" v ]
 
         viewAction { name, cost, caution } =
             div [ class "volley--action" ]
@@ -313,7 +310,8 @@ viewVolley model index =
 
                     Just x ->
                         [ button [ clickHandler name x ] [ text <| buttonLabel x ]
-                        , cautionTooltip name caution
+                        , span [] [ text name ]
+                        , cautionTooltip caution
                         ]
                 )
 
