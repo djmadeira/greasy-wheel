@@ -7,10 +7,23 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error(..))
 import Json.Decode as Decode exposing (Decoder, at, decodeString, field, int, keyValuePairs, map2, map5, maybe, string)
-import List exposing (drop, filter, foldl, head, length, repeat, tail, take)
+import List exposing (drop, filter, foldl, head, indexedMap, length, member, repeat, tail, take)
 import List.Extra exposing (getAt, groupWhile, splitAt, takeWhile, unfoldr)
 import OrderedDict
 import SpecialChars exposing (noBreakSpace)
+
+
+last : List a -> Maybe a
+last list =
+    case list of
+        [] ->
+            Nothing
+
+        [ l ] ->
+            Just l
+
+        _ :: rest ->
+            last rest
 
 
 
@@ -351,7 +364,7 @@ actionsToRounds actions =
             length rounds
 
         lastRoundSize =
-            case tail rounds of
+            case last rounds of
                 Just x ->
                     length x
 
@@ -378,24 +391,31 @@ queueFromIndex model index =
             model.actionQueue.third
 
 
-actionButton : Model -> VolleyIndex -> Action -> List String -> Html Msg
-actionButton model index action round =
+actionButton : Model -> VolleyIndex -> Action -> Int -> List String -> Html Msg
+actionButton model index action roundN round =
     let
         queue =
             queueFromIndex model index
 
         actionChecked =
-            List.member action.id round && List.member action.id queue
+            case getAt roundN queue of
+                Just x ->
+                    action.id == x
+
+                Nothing ->
+                    False
 
         buttonDisabled =
             if actionChecked then
                 False
 
-            else if not <| List.isEmpty queue then
-                True
-
             else
-                False
+                case getAt roundN queue of
+                    Just _ ->
+                        True
+
+                    Nothing ->
+                        False
 
         className =
             if actionChecked then
@@ -459,9 +479,8 @@ viewAction model index action =
         rounds =
             actionsToRounds [ model.actionQueue.first, model.actionQueue.second, model.actionQueue.third ]
 
-        test =
-            Debug.log "test" <| Debug.toString rounds
-
+        -- test =
+        --     Debug.log "test" <| Debug.toString rounds
         cautionTooltip =
             case action.caution of
                 Nothing ->
@@ -471,7 +490,7 @@ viewAction model index action =
                     span [] [ tooltip "*" v ]
     in
     div [ class "volley--action" ]
-        (List.map (actionButton model index action) rounds
+        (indexedMap (actionButton model index action) rounds
             ++ [ span [] [ text action.name ]
                , cautionTooltip
                ]
