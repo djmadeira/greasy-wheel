@@ -397,6 +397,14 @@ actionButton model index action roundN round =
         queue =
             queueFromIndex model index
 
+        costSafe =
+            case action.cost of
+                Nothing ->
+                    0
+
+                Just x ->
+                    x
+
         actionChecked =
             case getAt roundN queue of
                 Just x ->
@@ -408,6 +416,9 @@ actionButton model index action roundN round =
         buttonDisabled =
             if actionChecked then
                 False
+
+            else if model.spentActions + costSafe > model.reflexes then
+                True
 
             else
                 case getAt roundN queue of
