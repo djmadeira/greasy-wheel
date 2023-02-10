@@ -2,10 +2,14 @@
 
 import "./tailwind.css";
 require("./styles.scss");
-const actions = require('./actions.yml');
+const config = require('./actions.yaml').default;
+
+config.fight.actions = Object.fromEntries(config.fight.actions.entries());
+
+const flags = JSON.stringify(config)
 
 const {Elm} = require('./Main');
-var app = Elm.Main.init({flags: JSON.stringify(actions)});
+var app = Elm.Main.init({flags});
 
 app.ports.toJs.subscribe(data => {
     console.log(data);

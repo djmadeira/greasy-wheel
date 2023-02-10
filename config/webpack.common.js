@@ -64,7 +64,7 @@ module.exports = (withDebug) => {
                     test: /\.(png|svg|jpg|jpeg|gif)$/i,
                     type: 'asset/resource',
                 }, {
-                    test: /\.ya?ml$/,
+                    test: /\.yaml/,
                     use: 'yaml-loader'
                 }
             ],

@@ -6,8 +6,9 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error(..))
-import Json.Decode as Decode exposing (Decoder, at, decodeString, dict, field, int, map2, map5, nullable, string)
+import Json.Decode as Decode exposing (Decoder, at, decodeString, dict, field, int, keyValuePairs, map2, map5, maybe, nullable, string)
 import List.Extra exposing (groupWhile)
+import OrderedDict
 import SpecialChars exposing (noBreakSpace)
 
 
@@ -30,13 +31,13 @@ type alias Action =
     { group : String
     , actionType : String
     , name : String
-    , cost : Int
+    , cost : Maybe Int
     , caution : Maybe String
     }
 
 
 type alias Volley =
-    { actionsPerVolley : Int, actions : Dict.Dict String Action }
+    { actionsPerVolley : Int, actions : OrderedDict.OrderedDict String Action }
 
 
 type VolleyIndex
@@ -58,38 +59,25 @@ type alias Model =
     { reflexes : Int
     , spentActions : Int
     , actionQueue : ActionQueue
+    , decodeError : String
     , serverMessage : String
     , fight : Volley
     }
 
 
-type alias ActionDat =
-    { group : String
-    , actionType : String
-    , name : String
-    , cost : Int
-    , caution : Maybe String
-    }
-
-
-actionDatToAction : String -> ActionDat -> Action
-actionDatToAction id data =
-    { group = data.group
-    , actionType = data.actionType
-    , name = id
-    , cost = data.cost
-    , caution = data.caution
-    }
-
-
-actionDatDecoder : Decoder ActionDat
-actionDatDecoder =
-    map5 ActionDat
+actionDecoder : Decoder Action
+actionDecoder =
+    map5 Action
         (field "group" string)
         (field "type" string)
         (field "name" string)
-        (field "cost" int)
-        (field "caution" <| nullable string)
+        (maybe (field "cost" int))
+        (maybe (field "caution" string))
+
+
+orderedDict : Decoder a -> Decoder (OrderedDict.OrderedDict String a)
+orderedDict decoder =
+    Decode.map OrderedDict.fromList (keyValuePairs decoder)
 
 
 volleyDecoder : Decoder Volley
@@ -97,31 +85,36 @@ volleyDecoder =
     at [ "fight" ]
         (map2 Volley
             (field "actionsPerVolley" int)
-            (field "actions" (Decode.map (Dict.map actionDatToAction) (dict actionDatDecoder)))
+            (field "actions" <| orderedDict actionDecoder)
         )
 
 
-loadActions : String -> Volley
+loadActions : String -> ( Volley, String )
 loadActions json =
     let
         res =
             decodeString volleyDecoder json
     in
     case res of
-        Err _ ->
-            { actionsPerVolley = 0, actions = Dict.empty }
+        Err e ->
+            ( { actionsPerVolley = 0, actions = OrderedDict.empty }, Decode.errorToString e )
 
         Ok a ->
-            a
+            ( a, "" )
 
 
 init : String -> ( Model, Cmd Msg )
 init flags =
+    let
+        decodeResult =
+            loadActions flags
+    in
     ( { reflexes = 0
       , spentActions = 0
       , actionQueue = initActionQueue
       , serverMessage = ""
-      , fight = loadActions flags
+      , decodeError = Tuple.second decodeResult
+      , fight = Tuple.first decodeResult
       }
     , Cmd.none
     )
@@ -238,7 +231,8 @@ queueAction model action index cost =
 viewActionQueue : String -> List String -> Html Msg
 viewActionQueue label actions =
     div [ class "action-queue--volley" ] <|
-        List.map (\action -> span [] [ text action ]) actions
+        h3 [] [ text <| "Volley " ++ label ]
+            :: List.map (\action -> span [] [ text action ]) actions
 
 
 view : Model -> Html Msg
@@ -311,14 +305,14 @@ viewVolley model index =
                         , span [] [ tooltip "*" v ]
                         ]
 
-        viewAction { actionType, name, cost, caution } =
+        viewAction { name, cost, caution } =
             div [ class "volley--action" ]
-                (case actionType of
-                    "Variable" ->
+                (case cost of
+                    Nothing ->
                         [ input [ placeholder "x" ] [], span [] [ text name ] ]
 
-                    _ ->
-                        [ button [ clickHandler name cost ] [ text <| buttonLabel cost ]
+                    Just x ->
+                        [ button [ clickHandler name x ] [ text <| buttonLabel x ]
                         , cautionTooltip name caution
                         ]
                 )
@@ -336,7 +330,7 @@ viewVolley model index =
     in
     div [ class "volley" ]
         (List.append [ h2 [] [ text <| "Volley " ++ n ] ]
-            (List.map viewActionGroup (groupWhile (\a b -> a.group == b.group) (Dict.values model.fight.actions)))
+            (List.map viewActionGroup (groupWhile (\a b -> a.group == b.group) (OrderedDict.values model.fight.actions)))
         )
 
 

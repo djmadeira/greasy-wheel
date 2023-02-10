@@ -1,187 +1,187 @@
 fight:
   actionsPerVolley: 3
-  actions:
-    Strike:
-      group: Attack
-      type: Standard
-      name: Strike
-      cost: 1
-    GreatStrike:
-      group: Attack
-      type: Standard
-      name: "Great Strike"
-      cost: 2 
-    BlockStrike:
-      group: Attack
-      type: Special
-      name: "Block & Strike"
-      cost: 1
-      caution: "Requires Shield Training"
-    LockStrike:
-      group: Attack
-      type: Special
-      name: "Lock & Strike"
-      cost: 1
-      caution: "Requires a special trait like Wolf Snout. If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent."
-    Avoid:
-      group: Defense
-      type: Standard
-      name: "Avoid"
-      cost: 1 
-    Block:
-      group: Defense
-      type: Standard
-      name: "Block"
-      cost: 1 
-    Counterstrike:
-      group: Defense
-      type: Standard
-      name: "Counterstrike"
-      cost: 1 
-    Assess:
-      group: "Basic Fighting"
-      type: Standard
-      name: "Assess"
-      cost: 1 
-    ChangeStance:
-      group: "Basic Fighting"
-      type: Standard
-      name: "Change Stance"
-      cost: 1 
-    ChargeTackle:
-      group: "Basic Fighting"
-      type: Special
-      name: "Charge/Tackle"
-      cost: 1 
-      caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
-    DrawWeapon:
-      group: "Basic Fighting"
-      type: Standard
-      name: "Draw Weapon"
-      cost: 2 
-    GetUp:
-      group: "Basic Fighting"
-      type: Standard
-      name: "Get Up"
-      cost: 2 
-    Lock:
-      group: "Basic Fighting"
-      type: Special
-      name: "Lock"
-      cost: 1 
-      caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
-    Push:
-      group: "Basic Fighting"
-      type: Special
-      name: "Push"
-      cost: 1 
-      caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
-    PhysAction:
-      group: "Basic Fighting"
-      type: Standard
-      name: "Physical Action"
-      cost: 2 
-    Beat:
-      group: "Special Fighting"
-      type: Standard
-      name: "Beat"
-      cost: 1 
-    Disarm:
-      group: "Special Fighting"
-      type: Standard
-      name: "Disarm"
-      cost: 1 
-    Feint:
-      group: "Special Fighting"
-      type: Standard
-      name: "Feint"
-      cost: 1 
-    ThrowPerson:
-      group: "Special Fighting"
-      type: Special
-      name: "Throw Person"
-      cost: 1 
-      caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
-    Aim:
-      group: "Shooting and Throwing"
-      type: Standard
-      name: "Aim"
-      cost: 1 
-    FireGun:
-      group: "Shooting and Throwing"
-      type: Standard
-      name: "Fire Gun/Crossbow"
-      cost: 2 
-    NockDraw:
-      group: "Shooting and Throwing"
-      type: Standard
-      name: "Nock and Draw"
-      cost: 5 
-    ReleaseBow:
-      group: "Shooting and Throwing"
-      type: Standard
-      name: "Release Bow"
-      cost: 1 
-    Snapshot:
-      group: "Shooting and Throwing"
-      type: Standard
-      name: "Snapshot"
-      cost: 1 
-    ThrowWeapon:
-      group: "Shooting and Throwing"
-      type: Standard
-      name: "Throw Weapon"
-      cost: 2 
-    CastSpell:
-      group: "Magic"
-      type: Variable
-      name: "Cast Spell"
-    DropSpell:
-      group: "Magic"
-      type: Standard
-      name: "Drop Spell"
-      cost: 1 
-    CommandSpirit:
-      group: "Magic"
-      type: Standard
-      name: "Command Spirit"
-      cost: 1 
-    SingHowlPray:
-      group: "Magic"
-      type: Special
-      name: "Sing, Howl, Pray"
-      cost: 0, 
-      caution: "Does not cost an action"
-    CommandPerson:
-      group: "Social"
-      type: Standard
-      name: "Command"
-      cost: 2 
-    Intimidate:
-      group: "Social"
-      type: Standard
-      name: "Intimidate"
-      cost: 2 
-    FallProne:
-      group: "Hesitation"
-      type: Standard
-      name: "Fall Prone"
-      cost: 1 
-    RunScreaming:
-      group: "Hesitation"
-      type: Standard
-      name: "Run Screaming"
-      cost: 1 
-    StandDrool:
-      group: "Hesitation"
-      type: Standard
-      name: "Stand and Drool"
-      cost: 1 
-    Swoon:
-      group: "Hesitation"
-      type: Standard
-      name: "Swoon"
-      cost: 1 
+  actions: !!omap
+    - Strike:
+        group: Attack
+        type: Standard
+        name: Strike
+        cost: 1
+    - GreatStrike:
+        group: Attack
+        type: Standard
+        name: "Great Strike"
+        cost: 2 
+    - BlockStrike:
+        group: Attack
+        type: Special
+        name: "Block & Strike"
+        cost: 1
+        caution: "Requires Shield Training"
+    - LockStrike:
+        group: Attack
+        type: Special
+        name: "Lock & Strike"
+        cost: 1
+        caution: "Requires a special trait like Wolf Snout. If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent."
+    - Avoid:
+        group: Defense
+        type: Standard
+        name: "Avoid"
+        cost: 1 
+    - Block:
+        group: Defense
+        type: Standard
+        name: "Block"
+        cost: 1 
+    - Counterstrike:
+        group: Defense
+        type: Standard
+        name: "Counterstrike"
+        cost: 1 
+    - Assess:
+        group: "Basic Fighting"
+        type: Standard
+        name: "Assess"
+        cost: 1 
+    - ChangeStance:
+        group: "Basic Fighting"
+        type: Standard
+        name: "Change Stance"
+        cost: 1 
+    - ChargeTackle:
+        group: "Basic Fighting"
+        type: Special
+        name: "Charge/Tackle"
+        cost: 1 
+        caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
+    - DrawWeapon:
+        group: "Basic Fighting"
+        type: Standard
+        name: "Draw Weapon"
+        cost: 2 
+    - GetUp:
+        group: "Basic Fighting"
+        type: Standard
+        name: "Get Up"
+        cost: 2 
+    - Lock:
+        group: "Basic Fighting"
+        type: Special
+        name: "Lock"
+        cost: 1 
+        caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
+    - Push:
+        group: "Basic Fighting"
+        type: Special
+        name: "Push"
+        cost: 1 
+        caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
+    - PhysAction:
+        group: "Basic Fighting"
+        type: Standard
+        name: "Physical Action"
+        cost: 2 
+    - Beat:
+        group: "Special Fighting"
+        type: Standard
+        name: "Beat"
+        cost: 1 
+    - Disarm:
+        group: "Special Fighting"
+        type: Standard
+        name: "Disarm"
+        cost: 1 
+    - Feint:
+        group: "Special Fighting"
+        type: Standard
+        name: "Feint"
+        cost: 1 
+    - ThrowPerson:
+        group: "Special Fighting"
+        type: Special
+        name: "Throw Person"
+        cost: 1 
+        caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
+    - Aim:
+        group: "Shooting and Throwing"
+        type: Standard
+        name: "Aim"
+        cost: 1 
+    - FireGun:
+        group: "Shooting and Throwing"
+        type: Standard
+        name: "Fire Gun/Crossbow"
+        cost: 2 
+    - NockDraw:
+        group: "Shooting and Throwing"
+        type: Standard
+        name: "Nock and Draw"
+        cost: 5 
+    - ReleaseBow:
+        group: "Shooting and Throwing"
+        type: Standard
+        name: "Release Bow"
+        cost: 1 
+    - Snapshot:
+        group: "Shooting and Throwing"
+        type: Standard
+        name: "Snapshot"
+        cost: 1 
+    - ThrowWeapon:
+        group: "Shooting and Throwing"
+        type: Standard
+        name: "Throw Weapon"
+        cost: 2 
+    - CastSpell:
+        group: "Magic"
+        type: Variable
+        name: "Cast Spell"
+    - DropSpell:
+        group: "Magic"
+        type: Standard
+        name: "Drop Spell"
+        cost: 1 
+    - CommandSpirit:
+        group: "Magic"
+        type: Standard
+        name: "Command Spirit"
+        cost: 1 
+    - SingHowlPray:
+        group: "Magic"
+        type: Special
+        name: "Sing, Howl, Pray"
+        cost: 0, 
+        caution: "Does not cost an action"
+    - CommandPerson:
+        group: "Social"
+        type: Standard
+        name: "Command"
+        cost: 2 
+    - Intimidate:
+        group: "Social"
+        type: Standard
+        name: "Intimidate"
+        cost: 2 
+    - FallProne:
+        group: "Hesitation"
+        type: Standard
+        name: "Fall Prone"
+        cost: 1 
+    - RunScreaming:
+        group: "Hesitation"
+        type: Standard
+        name: "Run Screaming"
+        cost: 1 
+    - StandDrool:
+        group: "Hesitation"
+        type: Standard
+        name: "Stand and Drool"
+        cost: 1 
+    - Swoon:
+        group: "Hesitation"
+        type: Standard
+        name: "Swoon"
+        cost: 1 
   interactions:
     Strike:
       GreatStrike: "Std Skill Test: Ob 1"

@@ -33,6 +33,7 @@
         "elm-webpack-loader": "^8.0.0",
         "file-loader": "^6.2.0",
         "html-webpack-plugin": "^5.5.0",
+        "js-yaml-loader": "^1.2.2",
         "mini-css-extract-plugin": "^2.4.5",
         "postcss": "^8.4.4",
         "postcss-cli": "^9.0.2",
@@ -47,7 +48,8 @@
         "webpack": "^5.64.4",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.6.0",
-        "webpack-merge": "^5.8.0"
+        "webpack-merge": "^5.8.0",
+        "yaml": "^2.2.1"
     },
     "engines": {
         "node": ">=12"
@@ -56,6 +58,7 @@
         "tabWidth": 4
     },
     "dependencies": {
+        "cson-loader": "^0.1.0",
         "yaml-loader": "^0.8.0"
     }
 }
