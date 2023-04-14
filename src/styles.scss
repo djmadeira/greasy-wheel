@@ -6,6 +6,7 @@ body {
     background-color: #fff;
     color: $clr-text;
     font-family: 'PT Serif', serif;
+    font-size: 16px;
 }
 
 *, *:before, *:after {
@@ -90,7 +91,9 @@ header {
     padding: 1rem;
 }
 
-.inputs--reflexes {
+.inputs--field {
+    margin-right: 1rem;
+
     input {
         width: 2ch;
     }

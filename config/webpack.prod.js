@@ -25,7 +25,7 @@ const prod = {
         }),
         new MiniCssExtractPlugin({
             // Options similar to the same options in webpackOptions.output
-            filename: "[name]-[chunkhash].css"
+            filename: "[name].css"
         })
     ],
     module: {

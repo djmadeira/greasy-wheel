@@ -101,7 +101,7 @@ fight:
         type: Special
         name: "Throw Person"
         cost: 1 
-        caution: If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
+        caution: Requires Brawling, Boxing, Martial Arts, or similar. If you’re using this action, you must vie for position with your hands, a knife or your teeth. If you positioned with another weapon, you cede advantage to your opponent.
     - Aim:
         group: "Shooting and Throwing"
         type: Standard

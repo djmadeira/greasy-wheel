@@ -1,13 +1,14 @@
 port module Main exposing (Model, Msg(..), init, main, setReflexes, toJs, update, view)
 
+-- import Debug exposing (log)
+
 import Browser
-import Debug exposing (log)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error(..))
 import Json.Decode as Decode exposing (Decoder, at, decodeString, field, int, keyValuePairs, map2, map5, maybe, string)
-import List exposing (drop, filter, foldl, head, indexedMap, length, member, repeat, tail, take)
+import List exposing (drop, filter, foldl, head, indexedMap, length, member, repeat, reverse, tail, take)
 import List.Extra exposing (getAt, groupWhile, splitAt, takeWhile, unfoldr)
 import OrderedDict
 import SpecialChars exposing (noBreakSpace)
@@ -72,6 +73,7 @@ initActionQueue =
 
 type alias Model =
     { reflexes : Int
+    , weaponSpeed : Int
     , spentActions : Int
     , actionQueue : ActionQueue
     , decodeError : String
@@ -144,7 +146,8 @@ init flags =
         decodeResult =
             loadActions flags
     in
-    ( { reflexes = 0
+    ( { reflexes = 4
+      , weaponSpeed = 0
       , spentActions = 0
       , actionQueue = initActionQueue
       , serverMessage = ""
@@ -166,6 +169,7 @@ init flags =
 
 type Msg
     = SetReflexes String
+    | SetWeaponSpeed String
     | QueueAction String VolleyIndex Int
     | UnqueueAction String VolleyIndex Int
     | ClearQueue
@@ -180,7 +184,7 @@ update message model =
             ( queueAction model action volley cost, toJs "QueueAction" )
 
         UnqueueAction action volley cost ->
-            ( unqueueAction model action volley cost, toJs "QueueAction" )
+            ( unqueueAction model action volley cost, toJs "UnqueueAction" )
 
         ClearQueue ->
             ( { model | actionQueue = initActionQueue, spentActions = 0 }, toJs "ClearQueue" )
@@ -196,6 +200,18 @@ update message model =
 
                 Just n ->
                     ( setReflexes model n, toJs "SetReflexes" )
+
+        SetWeaponSpeed input ->
+            let
+                r =
+                    String.toInt input
+            in
+            case r of
+                Nothing ->
+                    ( setWeaponSpeed model 0, toJs "SetWeaponSpeed" )
+
+                Just n ->
+                    ( setWeaponSpeed model n, toJs "SetWeaponSpeed" )
 
         TestServer ->
             let
@@ -234,14 +250,14 @@ httpErrorToString err =
             "BadBody: " ++ s
 
 
-{-| increments the counter
-
-    add1 5 --> 6
-
--}
 setReflexes : Model -> Int -> Model
 setReflexes model r =
     { model | reflexes = r, spentActions = 0, actionQueue = { first = [], second = [], third = [] } }
+
+
+setWeaponSpeed : Model -> Int -> Model
+setWeaponSpeed model s =
+    { model | weaponSpeed = s }
 
 
 unqueueAction : Model -> String -> VolleyIndex -> Int -> Model
@@ -298,7 +314,8 @@ view model =
         [ header [] []
         , main_ []
             [ div [ class "inputs" ]
-                [ label [ class "inputs--reflexes" ] [ span [] [ text "Reflexes B" ], input [ onInput SetReflexes ] [] ]
+                [ label [ class "inputs--field" ] [ span [] [ text "Reflexes B" ], input [ onInput SetReflexes ] [] ]
+                , label [ class "inputs--field" ] [ span [] [ text "Weapon Speed" ], input [ onInput SetWeaponSpeed ] [] ]
                 ]
             , div [ class "outputs" ]
                 [ div [ class "available-actions" ]
@@ -391,6 +408,11 @@ queueFromIndex model index =
             model.actionQueue.third
 
 
+reversedSuperQueue : Model -> List String
+reversedSuperQueue model =
+    reverse <| List.concat [ model.actionQueue.first, model.actionQueue.second, model.actionQueue.third ]
+
+
 actionButton : Model -> VolleyIndex -> Action -> Int -> List String -> Html Msg
 actionButton model index action roundN round =
     let
@@ -413,9 +435,21 @@ actionButton model index action roundN round =
                 Nothing ->
                     False
 
+        isStrikeAction id =
+            String.contains "Strike" id
+
+        canTakeStrikeAction =
+            True
+
+        -- length (takeWhile isStrikeAction (reversedSuperQueue model)) < model.weaponSpeed
+        -- test =
+        --     Debug.log "test" <| Debug.toString canTakeStrikeAction
         buttonDisabled =
             if actionChecked then
                 False
+
+            else if isStrikeAction action.id && not canTakeStrikeAction then
+                True
 
             else if model.spentActions + costSafe > model.reflexes then
                 True
@@ -547,7 +581,7 @@ main =
         , update = update
         , view =
             \m ->
-                { title = "[title] Elm 0.19.1 starter"
+                { title = "Greasy Wheel"
                 , body = [ view m ]
                 }
         , subscriptions = \_ -> Sub.none

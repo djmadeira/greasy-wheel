@@ -1,0 +1,54 @@
+{
+    "name": "Greasy Wheel",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "description": "Tools for Burning Wheel in Roll20",
+    "permissions": [
+        "activeTab",
+        "tabs",
+        "storage",
+        "scripting"
+    ],
+    "icons": {
+        "48": "images/icons/icon48.png",
+        "64": "images/icons/icon64.png",
+        "128": "images/icons/icon128.png",
+        "256": "images/icons/icon256.png"
+    },
+    "action": {
+        "default_title": "Greasy Wheel"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["roll20/page_script.js"],
+            "matches": ["*://app.roll20.net/*"]
+        },
+        {
+            "resources": ["dist/bundle.js", "dist/main.css"],
+            "matches": ["https://djmadeira.github.io/*"]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://djmadeira.github.io/"
+            ],
+            "all_frames": true,
+            "js": [
+                "content_script.js"
+            ]
+        },
+        {
+            "matches": [
+                "*://app.roll20.net/editor/"
+            ],
+            "all_frames": true,
+            "js": [
+                "roll20/content_script.js"
+            ]
+        }
+    ]
+}
